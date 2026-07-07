@@ -6,7 +6,7 @@ A small home-lab project simulating a real attacker vs. defended-target scenario
 
 Two isolated environments talking over a bridged network:
 
-![Architecture](screenshots/01_architecture.png)
+![Architecture](01_architecture.png)
 
 - **Attacker side:** Kali Linux running as a Docker container on the host machine
 - **Target side:** Ubuntu VM (VirtualBox), running DVWA in Docker, fronted by SafeLine WAF
@@ -15,7 +15,7 @@ Two isolated environments talking over a bridged network:
 
 Every request from Kali hits SafeLine first, not DVWA directly:
 
-![Traffic flow](screenshots/02_traffic_flow.png)
+![Traffic flow](02_traffic_flow.png)
 
 ```
 Kali → SafeLine WAF (:8881, inspects) → allow → DVWA (:80, Docker)
@@ -36,25 +36,25 @@ DVWA itself only listens on `127.0.0.1:80` — unreachable directly from the net
 
 WAF sits in front of DVWA as a reverse proxy — attacker traffic hits SafeLine's port (`8881`), which forwards clean requests to DVWA's internal port `80`:
 
-![WAF reverse proxy config](screenshots/03_waf_config.png)
+![WAF reverse proxy config](03_waf_config.png)
 
 ## Experiments & Results
 
 ### 1. SYN flood (`hping3 --flood`)
 Sent thousands of raw SYN packets at the target.
 
-![SYN flood attempt](screenshots/04_syn_flood_test.png)
+![SYN flood attempt](04_syn_flood_test.png)
 
 **Result: invisible to the WAF.** SafeLine operates at the HTTP layer — raw SYN packets never complete a TCP handshake, so they never register as "requests." Dashboard stayed at 0.
 
 ### 2. HTTP flood (`ab -n 2000 -c 100`)
 Same idea, but with real, completed HTTP requests.
 
-![Flood traffic stats](screenshots/05_flood_stats.png)
+![Flood traffic stats](05_flood_stats.png)
 
 **Result: caught immediately.** 4,000 requests logged, 99.48% error rate — SafeLine's rate-limiting kicked in and started rejecting/challenging the flood mid-attack.
 
-![Rate limit block](screenshots/06_rate_limiting_block.png)
+![Rate limit block](06_rate_limiting_block.png)
 
 The attacking IP tripped a **"100 requests in 10 seconds"** rule and got hit with a 60-minute Anti-Bot Challenge — automatically, no manual intervention.
 
@@ -63,7 +63,7 @@ Sent the classic injection payload against DVWA's SQLi lab, once direct to port 
 
 **Result:** payload executed cleanly on the unprotected port — but was flagged and blocked as a distinct attack event when routed through the WAF:
 
-![Attack events log](screenshots/07_attack_events.png)
+![Attack events log](07_attack_events.png)
 
 ## Key Takeaways
 
